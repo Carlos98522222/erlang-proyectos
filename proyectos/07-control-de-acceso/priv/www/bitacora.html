@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AccessControl | Bitácora</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Inter', sans-serif; background: #f5f7fb; }
+        .sidebar { background: #101c36; }
+        .card { background: white; border: 1px solid #e8edf5; border-radius: 16px; }
+    </style>
+</head>
+<body class="min-h-screen flex text-slate-800">
+    <aside class="sidebar w-64 min-h-screen text-slate-300 p-5 hidden md:block">
+        <div class="flex items-center gap-3 mb-10">
+            <div class="bg-cyan-500 rounded-xl p-3 text-white font-bold">AC</div>
+            <div>
+                <h1 class="text-white font-bold">AccessControl</h1>
+                <p class="text-xs text-slate-400">Sistema de seguridad</p>
+            </div>
+        </div>
+        <nav class="space-y-2">
+            <a href="index.html" class="block rounded-xl p-3 hover:bg-slate-700">▦ Dashboard</a>
+            <a href="control-de-puertas.html" class="block rounded-xl p-3 hover:bg-slate-700">▣ Control de puertas</a>
+            <a href="credenciales.html" class="block rounded-xl p-3 hover:bg-slate-700">▤ Credenciales</a>
+            <a href="bitacora.html" class="block rounded-xl p-3 bg-blue-900 text-white">☷ Bitácora</a>
+            <a href="alertas.html" class="block rounded-xl p-3 hover:bg-slate-700">⚠ Alertas</a>
+        </nav>
+    </aside>
+
+    <main class="flex-1 p-6 md:p-10">
+        <header class="flex flex-wrap justify-between items-center gap-4 mb-8">
+            <div>
+                <p class="text-sm text-slate-500">Sistema / Monitoreo</p>
+                <h2 class="text-3xl font-extrabold mt-1">Bitácora de eventos</h2>
+                <p class="text-slate-500 mt-2">Registro histórico de los intentos de acceso.</p>
+            </div>
+            <button onclick="cargarBitacora()" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-xl text-sm">Actualizar</button>
+        </header>
+
+        <section class="grid grid-cols-1 sm:grid-cols-2 gap-5 mb-8">
+            <div class="card p-6">
+                <p class="text-sm text-slate-500">Eventos registrados</p>
+                <h3 id="total" class="text-3xl font-bold mt-3">--</h3>
+            </div>
+            <div class="card p-6">
+                <p class="text-sm text-slate-500">Estado de conexión</p>
+                <h3 id="conexion" class="text-xl font-bold mt-3">Verificando...</h3>
+            </div>
+        </section>
+
+        <section class="card p-6">
+            <div class="flex flex-wrap justify-between gap-3 mb-5">
+                <h3 class="text-lg font-bold">Historial de actividad</h3>
+                <input id="buscar" oninput="filtrar()" placeholder="Buscar evento..." class="border border-slate-200 rounded-xl px-4 py-2 text-sm outline-none focus:border-blue-500">
+            </div>
+            <div class="overflow-x-auto">
+                <table class="w-full text-sm text-left">
+                    <thead class="text-slate-500 border-b">
+                        <tr>
+                            <th class="py-3">ID</th>
+                            <th class="py-3">Puerta</th>
+                            <th class="py-3">Credencial</th>
+                            <th class="py-3">Resultado</th>
+                            <th class="py-3">Fecha / hora</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tabla">
+                        <tr><td colspan="5" class="py-5 text-slate-400">Cargando registros...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+    </main>
+
+    <script>
+        let eventos = [];
+
+        async function cargarBitacora() {
+            try {
+                const respuesta = await fetch('/api/bitacora');
+                if (!respuesta.ok) throw new Error('Error al consultar bitácora');
+
+                const datos = await respuesta.json();
+                eventos = Array.isArray(datos) ? datos : (datos.eventos || []);
+
+                document.getElementById('conexion').textContent = 'Conectado';
+                document.getElementById('conexion').className = 'text-xl font-bold mt-3 text-green-600';
+                document.getElementById('total').textContent = eventos.length;
+
+                mostrar(eventos);
+            } catch (error) {
+                document.getElementById('conexion').textContent = 'Desconectado';
+                document.getElementById('conexion').className = 'text-xl font-bold mt-3 text-red-600';
+                document.getElementById('tabla').innerHTML =
+                    '<tr><td colspan="5" class="py-5 text-red-500">No se pudo obtener la bitácora.</td></tr>';
+            }
+        }
+
+        function mostrar(lista) {
+            const tabla = document.getElementById('tabla');
+
+            if (!lista.length) {
+                tabla.innerHTML = '<tr><td colspan="5" class="py-5 text-slate-400">Todavía no hay eventos registrados.</td></tr>';
+                return;
+            }
+
+            tabla.innerHTML = lista.slice().reverse().map(e => `
+                <tr class="border-b border-slate-100">
+                    <td class="py-4 font-semibold">${e.id ?? '-'}</td>
+                    <td class="py-4">${e.puerta ?? e.door ?? '-'}</td>
+                    <td class="py-4">${e.credencial ?? e.credential ?? '-'}</td>
+                    <td class="py-4">${e.resultado ?? e.estado ?? e.tipo ?? '-'}</td>
+                    <td class="py-4">${e.fecha ?? e.timestamp ?? '-'}</td>
+                </tr>
+            `).join('');
+        }
+
+        function filtrar() {
+            const texto = document.getElementById('buscar').value.toLowerCase();
+            mostrar(eventos.filter(e => JSON.stringify(e).toLowerCase().includes(texto)));
+        }
+
+        cargarBitacora();
+        setInterval(cargarBitacora, 15000);
+    </script>
+</body>
+</html>

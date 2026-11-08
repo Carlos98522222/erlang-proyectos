@@ -1,3 +1,20 @@
+# Archivos compilados
 _build/
 *.beam
 erl_crash.dump
+
+# Datos persistentes
+data/
+*.dets
+
+# Archivos temporales
+*.log
+*.dump
+
+# Archivos de sistema
+.DS_Store
+Thumbs.db
+
+# Cookie y configuración privada
+config/vm.args
+config/vm.args

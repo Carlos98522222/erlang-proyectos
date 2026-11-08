@@ -1,5 +1,5 @@
 -name p07_control_de_acceso@127.0.0.1
--setcookie cambiar_en_produccion
+-setcookie 294fb2333aa13c8449d9f7cd0ee693f2bb99626ecf207a8570507935a421cc0e
 +S 4:4
 +SDcpu 4:4
 +SDio 10

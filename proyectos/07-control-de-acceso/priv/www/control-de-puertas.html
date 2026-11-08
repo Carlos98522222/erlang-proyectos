@@ -1,0 +1,387 @@
+
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Control de Acceso | Puertas</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background: #f5f7fb;
+        }
+
+        .sidebar { background: #101c36; }
+        .nav-active { background: #243b67; color: white; }
+
+        .card {
+            background: white;
+            border: 1px solid #e8edf5;
+            border-radius: 16px;
+        }
+
+        .estado-cerrada {
+            background: #dcfce7;
+            color: #15803d;
+        }
+
+        .estado-abierta {
+            background: #fef3c7;
+            color: #b45309;
+        }
+
+        .estado-forzada {
+            background: #fee2e2;
+            color: #b91c1c;
+        }
+
+        button:disabled {
+            opacity: 0.45;
+            cursor: not-allowed;
+        }
+    </style>
+</head>
+
+<body class="min-h-screen flex text-slate-800">
+
+    <!-- BARRA LATERAL -->
+    <aside class="sidebar w-64 min-h-screen text-slate-300 p-5 hidden md:block">
+        <div class="flex items-center gap-3 mb-10">
+            <div class="bg-cyan-500 rounded-xl p-3 text-white font-bold">AC</div>
+            <div>
+                <h1 class="text-white font-bold">AccessControl</h1>
+                <p class="text-xs text-slate-400">Sistema de seguridad</p>
+            </div>
+        </div>
+
+        <p class="text-xs uppercase tracking-widest text-slate-500 mb-3">
+            Principal
+        </p>
+
+        <nav class="space-y-2">
+            <a href="index.html" class="block rounded-xl p-3 hover:bg-slate-700">▦ Dashboard</a>
+            <a href="control-de-puertas.html" class="nav-active block rounded-xl p-3">▣ Control de puertas</a>
+            <a href="credenciales.html" class="block rounded-xl p-3 hover:bg-slate-700">▤ Credenciales</a>
+            <a href="bitacora.html" class="block rounded-xl p-3 hover:bg-slate-700">☷ Bitácora</a>
+            <a href="alertas.html" class="block rounded-xl p-3 hover:bg-slate-700">⚠ Alertas</a>
+        </nav>
+    </aside>
+
+    <!-- CONTENIDO PRINCIPAL -->
+    <main class="flex-1 p-6 md:p-10">
+
+        <header class="flex flex-wrap justify-between items-center gap-4 mb-8">
+            <div>
+                <p class="text-sm text-slate-500">Sistema / Administración</p>
+                <h2 class="text-3xl font-extrabold mt-1">Control de puertas</h2>
+                <p class="text-slate-500 mt-2">
+                    Supervisa y administra las puertas de acceso.
+                </p>
+            </div>
+
+            <button
+                onclick="cargarPuertas()"
+                class="bg-blue-600 hover:bg-blue-700 text-white px-5 py-3 rounded-xl text-sm">
+                Actualizar
+            </button>
+        </header>
+
+        <!-- TARJETAS DE RESUMEN -->
+        <section class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 mb-8">
+
+            <div class="card p-6">
+                <p class="text-sm text-slate-500">Puertas registradas</p>
+                <h3 id="total" class="text-3xl font-bold mt-3">--</h3>
+            </div>
+
+            <div class="card p-6">
+                <p class="text-sm text-slate-500">Puertas cerradas</p>
+                <h3 id="cerradas" class="text-3xl font-bold mt-3 text-green-600">--</h3>
+            </div>
+
+            <div class="card p-6">
+                <p class="text-sm text-slate-500">Puertas abiertas</p>
+                <h3 id="abiertas" class="text-3xl font-bold mt-3 text-amber-600">--</h3>
+            </div>
+
+            <div class="card p-6">
+                <p class="text-sm text-slate-500">Puertas forzadas</p>
+                <h3 id="forzadas" class="text-3xl font-bold mt-3 text-red-600">--</h3>
+            </div>
+
+        </section>
+
+        <!-- ESTADO DEL SERVIDOR -->
+        <section class="card p-5 mb-8 flex justify-between items-center">
+            <div>
+                <p class="text-sm text-slate-500">Estado del servidor Erlang</p>
+                <h3 id="servidor" class="text-lg font-bold mt-1">
+                    Verificando conexión...
+                </h3>
+            </div>
+
+            <span id="indicadorServidor"
+                class="w-3 h-3 rounded-full bg-yellow-400">
+            </span>
+        </section>
+
+        <!-- MENSAJES -->
+        <div id="mensaje" class="hidden mb-5 p-4 rounded-xl text-sm"></div>
+
+        <!-- LISTADO DE PUERTAS -->
+        <section class="card p-6">
+
+            <div class="flex flex-wrap justify-between items-center gap-3 mb-5">
+                <h3 class="text-lg font-bold">Listado de puertas</h3>
+
+                <span id="ultimaActualizacion" class="text-xs text-slate-400">
+                    Esperando información...
+                </span>
+            </div>
+
+            <div class="overflow-x-auto">
+                <table class="w-full text-sm text-left">
+
+                    <thead class="text-slate-500 border-b">
+                        <tr>
+                            <th class="py-3">Identificador</th>
+                            <th class="py-3">Nombre</th>
+                            <th class="py-3">Estado actual</th>
+                            <th class="py-3">Última actualización</th>
+                            <th class="py-3">Acciones</th>
+                        </tr>
+                    </thead>
+
+                    <tbody id="tablaPuertas">
+                        <tr>
+                            <td colspan="5" class="py-5 text-slate-400">
+                                Consultando servidor...
+                            </td>
+                        </tr>
+                    </tbody>
+
+                </table>
+            </div>
+
+            <p class="text-xs text-slate-400 mt-5">
+                Los estados se obtienen directamente de los procesos de puertas
+                administrados por Erlang/OTP.
+            </p>
+
+        </section>
+
+    </main>
+
+    <script>
+
+        function obtenerEstado(estado) {
+            switch (estado) {
+                case 'cerrada':
+                    return {
+                        texto: 'Cerrada',
+                        clase: 'estado-cerrada'
+                    };
+
+                case 'abierta':
+                    return {
+                        texto: 'Abierta',
+                        clase: 'estado-abierta'
+                    };
+
+                case 'forzada':
+                    return {
+                        texto: 'Forzada',
+                        clase: 'estado-forzada'
+                    };
+
+                default:
+                    return {
+                        texto: 'Desconocido',
+                        clase: 'bg-slate-100 text-slate-600'
+                    };
+            }
+        }
+
+        function formatearFecha(timestamp) {
+            if (!timestamp) return 'Sin registro';
+
+            return new Date(Number(timestamp)).toLocaleString('es-MX');
+        }
+
+        // Mostrar mensajes de resultado
+        function mostrarMensaje(texto, correcto) {
+            const mensaje = document.getElementById('mensaje');
+
+            mensaje.textContent = texto;
+            mensaje.className = correcto
+                ? 'mb-5 p-4 rounded-xl text-sm bg-green-100 text-green-700'
+                : 'mb-5 p-4 rounded-xl text-sm bg-red-100 text-red-700';
+
+            setTimeout(() => {
+                mensaje.classList.add('hidden');
+            }, 4000);
+        }
+
+        // Abrir o cerrar una puerta
+        async function controlarPuerta(id, accion) {
+            const confirmacion = confirm(
+                `¿Deseas ${accion} la puerta ${id}?`
+            );
+
+            if (!confirmacion) return;
+
+            try {
+                const respuesta = await fetch(
+                    `/api/puertas/${id}/${accion}`,
+                    { method: 'POST' }
+                );
+
+                const datos = await respuesta.json();
+
+                if (!respuesta.ok) {
+                    throw new Error(datos.error || 'No se pudo realizar la operación');
+                }
+
+                mostrarMensaje(datos.mensaje, true);
+
+                await cargarPuertas();
+
+            } catch (error) {
+                mostrarMensaje(error.message, false);
+            }
+        }
+
+        // Consultar puertas
+        async function cargarPuertas() {
+            const tabla = document.getElementById('tablaPuertas');
+            const servidor = document.getElementById('servidor');
+            const indicador = document.getElementById('indicadorServidor');
+
+            try {
+                const respuesta = await fetch('/api/puertas');
+
+                if (!respuesta.ok) {
+                    throw new Error('No se pudo consultar la API');
+                }
+
+                const datos = await respuesta.json();
+                const puertas = datos.puertas || [];
+
+                let cerradas = 0;
+                let abiertas = 0;
+                let forzadas = 0;
+
+                puertas.forEach(puerta => {
+                    switch (puerta.estado) {
+                        case 'cerrada':
+                            cerradas++;
+                            break;
+
+                        case 'abierta':
+                            abiertas++;
+                            break;
+
+                        case 'forzada':
+                            forzadas++;
+                            break;
+                    }
+                });
+
+                document.getElementById('total').textContent =
+                    datos.total ?? puertas.length;
+
+                document.getElementById('cerradas').textContent = cerradas;
+                document.getElementById('abiertas').textContent = abiertas;
+                document.getElementById('forzadas').textContent = forzadas;
+
+                servidor.textContent = 'Conectado';
+                servidor.className = 'text-lg font-bold mt-1 text-green-600';
+
+                indicador.className = 'w-3 h-3 rounded-full bg-green-500';
+
+                if (puertas.length === 0) {
+                    tabla.innerHTML = `
+                        <tr>
+                            <td colspan="5" class="py-5 text-slate-400">
+                                No hay puertas registradas.
+                            </td>
+                        </tr>
+                    `;
+                    return;
+                }
+
+                tabla.innerHTML = puertas
+                    .sort((a, b) => Number(a.id) - Number(b.id))
+                    .map(puerta => {
+                        const estado = obtenerEstado(puerta.estado);
+
+                        return `
+                            <tr class="border-b border-slate-100 hover:bg-slate-50">
+                                <td class="py-4 font-semibold">
+                                    P-${String(puerta.id).padStart(2, '0')}
+                                </td>
+
+                                <td class="py-4">
+                                    Puerta ${puerta.id}
+                                </td>
+
+                                <td class="py-4">
+                                    <span class="${estado.clase} px-3 py-1 rounded-full text-xs font-medium">
+                                        ${estado.texto}
+                                    </span>
+                                </td>
+
+                                <td class="py-4 text-slate-500">
+                                    ${formatearFecha(puerta.actualizado_en)}
+                                </td>
+
+                                <td class="py-4">
+                                    <div class="flex gap-2">
+                                        <button
+                                            onclick="controlarPuerta(${puerta.id}, 'abrir')"
+                                            ${puerta.estado === 'abierta' || puerta.estado === 'forzada' ? 'disabled' : ''}
+                                            class="bg-green-600 hover:bg-green-700 text-white px-3 py-2 rounded-lg text-xs">
+                                            Abrir
+                                        </button>
+
+                                        <button
+                                            onclick="controlarPuerta(${puerta.id}, 'cerrar')"
+                                            ${puerta.estado === 'cerrada' ? 'disabled' : ''}
+                                            class="bg-red-600 hover:bg-red-700 text-white px-3 py-2 rounded-lg text-xs">
+                                            Cerrar
+                                        </button>
+                                    </div>
+                                </td>
+                            </tr>
+                        `;
+                    })
+                    .join('');
+
+                document.getElementById('ultimaActualizacion').textContent =
+                    'Actualizado: ' + new Date().toLocaleTimeString('es-MX');
+
+            } catch (error) {
+                servidor.textContent = 'Desconectado';
+                servidor.className = 'text-lg font-bold mt-1 text-red-600';
+
+                indicador.className = 'w-3 h-3 rounded-full bg-red-500';
+
+                tabla.innerHTML = `
+                    <tr>
+                        <td colspan="5" class="py-5 text-red-500">
+                            No se pudo consultar el servidor. Verifica que Erlang esté ejecutándose.
+                        </td>
+                    </tr>
+                `;
+            }
+        }
+
+        cargarPuertas();
+
+    </script>
+
+</body>
+</html>

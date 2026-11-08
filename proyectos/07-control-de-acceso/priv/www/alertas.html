@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AccessControl | Alertas</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Inter', sans-serif; background: #f5f7fb; }
+        .sidebar { background: #101c36; }
+        .card { background: white; border: 1px solid #e8edf5; border-radius: 16px; }
+    </style>
+</head>
+<body class="min-h-screen flex text-slate-800">
+    <aside class="sidebar w-64 min-h-screen text-slate-300 p-5 hidden md:block">
+        <div class="flex items-center gap-3 mb-10">
+            <div class="bg-cyan-500 rounded-xl p-3 text-white font-bold">AC</div>
+            <div>
+                <h1 class="text-white font-bold">AccessControl</h1>
+                <p class="text-xs text-slate-400">Sistema de seguridad</p>
+            </div>
+        </div>
+        <nav class="space-y-2">
+            <a href="index.html" class="block rounded-xl p-3 hover:bg-slate-700">▦ Dashboard</a>
+            <a href="control-de-puertas.html" class="block rounded-xl p-3 hover:bg-slate-700">▣ Control de puertas</a>
+            <a href="credenciales.html" class="block rounded-xl p-3 hover:bg-slate-700">▤ Credenciales</a>
+            <a href="bitacora.html" class="block rounded-xl p-3 hover:bg-slate-700">☷ Bitácora</a>
+            <a href="alertas.html" class="block rounded-xl p-3 bg-blue-900 text-white">⚠ Alertas</a>
+        </nav>
+    </aside>
+
+    <main class="flex-1 p-6 md:p-10">
+        <header class="flex flex-wrap justify-between items-center gap-4 mb-8">
+            <div>
+                <p class="text-sm text-slate-500">Sistema / Seguridad</p>
+                <h2 class="text-3xl font-extrabold mt-1">Alertas de seguridad</h2>
+                <p class="text-slate-500 mt-2">Supervisión de eventos que requieren atención.</p>
+            </div>
+            <button onclick="cargarAlertas()" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-xl text-sm">Actualizar</button>
+        </header>
+
+        <section class="grid grid-cols-1 sm:grid-cols-2 gap-5 mb-8">
+            <div class="card p-6">
+                <p class="text-sm text-slate-500">Eventos registrados</p>
+                <h3 id="total" class="text-3xl font-bold mt-3">--</h3>
+            </div>
+            <div class="card p-6">
+                <p class="text-sm text-slate-500">Estado de conexión</p>
+                <h3 id="conexion" class="text-xl font-bold mt-3">Verificando...</h3>
+            </div>
+        </section>
+
+        <section class="card p-6">
+            <h3 class="font-bold text-lg mb-5">Eventos de seguridad</h3>
+            <div id="lista" class="space-y-3">
+                <p class="text-slate-400">Consultando bitácora...</p>
+            </div>
+        </section>
+    </main>
+
+    <script>
+        async function cargarAlertas() {
+            const lista = document.getElementById('lista');
+
+            try {
+                const respuesta = await fetch('/api/bitacora');
+                if (!respuesta.ok) throw new Error('Error de conexión');
+
+                const datos = await respuesta.json();
+                const eventos = Array.isArray(datos) ? datos : (datos.eventos || []);
+
+                document.getElementById('conexion').textContent = 'Conectado';
+                document.getElementById('conexion').className = 'text-xl font-bold mt-3 text-green-600';
+
+                const alertas = eventos.filter(e => {
+                    const texto = JSON.stringify(e).toLowerCase();
+                    return texto.includes('denegado') ||
+                           texto.includes('rechazado') ||
+                           texto.includes('revocada') ||
+                           texto.includes('error') ||
+                           texto.includes('alerta');
+                });
+
+                document.getElementById('total').textContent = alertas.length;
+
+                if (!alertas.length) {
+                    lista.innerHTML = `
+                        <div class="bg-green-50 border border-green-100 rounded-xl p-5">
+                            <p class="font-semibold text-green-800">Sin alertas detectadas</p>
+                            <p class="text-sm text-green-700 mt-1">No se encontraron eventos sospechosos en la bitácora.</p>
+                        </div>`;
+                    return;
+                }
+
+                lista.innerHTML = alertas.slice().reverse().map(e => `
+                    <div class="border border-red-100 bg-red-50 rounded-xl p-5">
+                        <div class="flex flex-wrap justify-between gap-2">
+                            <strong class="text-red-800">⚠ Evento que requiere atención</strong>
+                            <span class="text-xs text-red-600">ID: ${e.id ?? '-'}</span>
+                        </div>
+                        <p class="text-sm text-slate-700 mt-2">${e.resultado || e.estado || e.tipo || 'Evento de seguridad'}</p>
+                        <p class="text-xs text-slate-500 mt-2">Puerta: ${e.puerta ?? e.door ?? '-'} · Credencial: ${e.credencial ?? e.credential ?? '-'}</p>
+                    </div>
+                `).join('');
+            } catch (error) {
+                document.getElementById('conexion').textContent = 'Desconectado';
+                document.getElementById('conexion').className = 'text-xl font-bold mt-3 text-red-600';
+                lista.innerHTML = '<p class="text-red-500">No se pudo consultar la bitácora.</p>';
+            }
+        }
+
+        cargarAlertas();
+        setInterval(cargarAlertas, 15000);
+    </script>
+</body>
+</html>

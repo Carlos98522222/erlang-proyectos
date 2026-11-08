@@ -3,6 +3,6 @@
   {vsn, "0.1.0"},
   {registered, [p07_control_de_acceso_sup, p07_control_de_acceso_server]},
   {mod, {p07_control_de_acceso_app, []}},
-  {applications, [kernel, stdlib, cowboy, recon]},
+  {applications, [kernel, stdlib, cowboy, recon, jsx]},
   {env, []}
 ]}.
